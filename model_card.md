@@ -1,111 +1,81 @@
-# 🎧 Model Card: Music Recommender Simulation
+# Model Card: VibeFinder 1.0
 
-## 1. Model Name  
-
-Give your model a short, descriptive name.  
-Example: **VibeFinder 1.0**  
+## Model Name
+**VibeFinder 1.0** — A content-based music recommendation simulator.
 
 ---
 
-## 2. Intended Use  
-
-Describe what your recommender is designed to do and who it is for. 
-
-Prompts:  
-
-- What kind of recommendations does it generate  
-- What assumptions does it make about the user  
-- Is this for real users or classroom exploration  
+## Goal / Task
+VibeFinder recommends songs from a curated catalog that best match a user's taste profile. Given preferences like genre, mood, energy level, and danceability, it scores every song and returns the top-k ranked suggestions with human-readable explanations for each recommendation.
 
 ---
 
-## 3. How the Model Works  
-
-Explain your scoring approach in simple language.  
-
-Prompts:  
-
-- What features of each song are used (genre, energy, mood, etc.)  
-- What user preferences are considered  
-- How does the model turn those into a score  
-- What changes did you make from the starter logic  
-
-Avoid code here. Pretend you are explaining the idea to a friend who does not program.
+## Data Used
+- **Source**: Manually curated `data/songs.csv`
+- **Size**: 25 songs
+- **Features per song**:
+  - Categorical: `title`, `artist`, `genre`, `mood`, `release_decade`
+  - Numerical (0.0–1.0): `energy`, `valence`, `danceability`, `acousticness`
+  - Other: `tempo_bpm` (integer), `popularity` (0–100)
+- **Genre coverage**: pop, rock, hip-hop, lofi, classical, ambient, soul, electronic
+- **Limitations**: Dataset is small (25 songs). Genre distribution skews toward pop and hip-hop.
 
 ---
 
-## 4. Data  
+## Algorithm Summary
+VibeFinder uses **weighted content-based filtering**:
 
-Describe the dataset the model uses.  
+1. **Genre match** → adds points if song genre equals user's preferred genre
+2. **Mood match** → adds points if song mood matches user's preferred mood
+3. **Proximity scoring** → for numerical features (energy, valence, danceability), the score = `weight × (1 - |song_value - user_target|)`. Songs closer to the user's target earn more points.
+4. **Decade bonus** → small bonus if song release decade matches user preference
+5. **Ranking modes** shift the weights — `genre_first` amplifies genre match, `energy_focused` amplifies energy proximity, etc.
 
-Prompts:  
-
-- How many songs are in the catalog  
-- What genres or moods are represented  
-- Did you add or remove data  
-- Are there parts of musical taste missing in the dataset  
-
----
-
-## 5. Strengths  
-
-Where does your system seem to work well  
-
-Prompts:  
-
-- User types for which it gives reasonable results  
-- Any patterns you think your scoring captures correctly  
-- Cases where the recommendations matched your intuition  
+No machine learning is used. Scores are deterministic and fully explainable.
 
 ---
 
-## 6. Limitations and Bias 
+## Observed Behavior / Biases
 
-Where the system struggles or behaves unfairly. 
-
-Prompts:  
-
-- Features it does not consider  
-- Genres or moods that are underrepresented  
-- Cases where the system overfits to one preference  
-- Ways the scoring might unintentionally favor some users  
+- **Genre dominance**: When using `genre_first` mode, genre match overwhelms all other signals. A sad slow pop song will outscore a high-energy mood match from another genre.
+- **Filter bubble risk**: If a user's preferred genre (e.g., pop) makes up 40%+ of the dataset, most recommendations will be pop regardless of mood or energy preferences.
+- **Small dataset sensitivity**: With only 25 songs, small weight changes can drastically reorder the entire top-5.
+- **Popularity ignored**: The `popularity` column is loaded but not used in scoring — a deliberate choice to avoid recommending only mainstream hits.
+- **Mood vocabulary is limited**: Moods are single words (e.g., "happy", "sad"). Nuanced moods like "nostalgic" or "bittersweet" are not captured.
 
 ---
 
-## 7. Evaluation  
+## Evaluation Process
 
-How you checked whether the recommender behaved as expected. 
+Five distinct user profiles were tested across four ranking modes (balanced, genre_first, mood_first, energy_focused):
 
-Prompts:  
+| Profile | Notable Finding |
+|---|---|
+| High-Energy Pop Fan | Levitating and Blinding Lights consistently topped results |
+| Chill Lofi Listener | Only 1–2 songs matched genre exactly; system fell back on energy proximity |
+| Deep Intense Rock Head | Smells Like Teen Spirit dominated; system correctly deprioritized acoustic songs |
+| Hip-Hop Hype Machine | Sicko Mode and HUMBLE. scored highest; mood + energy alignment was strong |
+| Sad Pop Night Drive | Midnight Rain and Ocean Eyes ranked well; Circles appeared as a surprise match |
 
-- Which user profiles you tested  
-- What you looked for in the recommendations  
-- What surprised you  
-- Any simple tests or comparisons you ran  
-
-No need for numeric metrics unless you created some.
-
----
-
-## 8. Future Work  
-
-Ideas for how you would improve the model next.  
-
-Prompts:  
-
-- Additional features or preferences  
-- Better ways to explain recommendations  
-- Improving diversity among the top results  
-- Handling more complex user tastes  
+**Experiment**: Doubling energy weight in `energy_focused` mode caused Weightless (ambient, energy=0.1) to score higher than expected for the "Sad Pop" profile because its energy proximity was perfect — showing that genre filtering must remain present.
 
 ---
 
-## 9. Personal Reflection  
+## Intended Use
+- Educational simulation to demonstrate content-based filtering concepts
+- Exploring how weights affect recommendation outcomes
+- Understanding algorithmic bias and filter bubbles
 
-A few sentences about your experience.  
+## Non-Intended Use
+- Production music platform (dataset too small, no user behavior data)
+- Replacing collaborative filtering systems (no user-to-user signals)
+- Serving real users without substantial dataset expansion and validation
 
-Prompts:  
+---
 
-- What you learned about recommender systems  
-- Something unexpected or interesting you discovered  
-- How this changed the way you think about music recommendation apps  
+## Ideas for Improvement
+1. **Expand the dataset** to 500+ songs with real audio features from the Spotify API
+2. **Add collaborative filtering** layer using user listening history to complement content scores
+3. **Diversity penalty**: penalize songs from the same artist already in the top-5 to prevent artist monopolization
+4. **Mood embedding**: replace single-word moods with multi-dimensional mood vectors (valence + arousal) for richer matching
+5. **User feedback loop**: allow thumbs up/down to dynamically adjust weights per session
