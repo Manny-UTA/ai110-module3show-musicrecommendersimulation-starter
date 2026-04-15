@@ -101,6 +101,13 @@ You'll be prompted to choose a ranking mode (1–4) or run all profiles across a
 
 Screenshots of terminal output for each profile are included below (add yours after running).
 
+## Screenshots
+
+![Output 1](screenshot1.png)
+![Output 2](screenshot2.png)
+![Output 3](screenshot3.png)
+![Output 4](screenshot4.png)
+
 ---
 
 ## AI Collaboration
